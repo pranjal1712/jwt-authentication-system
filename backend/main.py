@@ -30,6 +30,10 @@ app.add_middleware(
 
 router = APIRouter(prefix="/api")
 
+@app.get("/")
+def read_root():
+    return {"message": "Server is running"}
+
 @router.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
@@ -173,7 +177,6 @@ def reset_password(request: schemas.ResetPassword, db: Session = Depends(get_db)
     
     return {"message": "Password reset successfully. You can now login."}
 
-app.include_router(router)
 
 if __name__ == "__main__":
     import uvicorn
