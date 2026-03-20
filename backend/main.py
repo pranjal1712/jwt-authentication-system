@@ -34,7 +34,6 @@ router = APIRouter(prefix="/api")
 def read_root():
     return {"message": "Server is running"}
 
-app.include_router(router)
 
 @router.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -179,6 +178,7 @@ def reset_password(request: schemas.ResetPassword, db: Session = Depends(get_db)
     
     return {"message": "Password reset successfully. You can now login."}
 
+app.include_router(router)
 
 if __name__ == "__main__":
     import uvicorn
