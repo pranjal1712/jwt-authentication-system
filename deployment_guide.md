@@ -17,6 +17,7 @@ Follow these steps to deploy your JWT Authentication System to the cloud.
     *   `MAIL_PORT`: `587`
     *   `MAIL_SERVER`: `smtp.gmail.com`
     *   `DATABASE_URL`: `sqlite:///./users.db` (For SQLite)
+    *   `FRONTEND_URL`: (Your Vercel URL, e.g., `https://your-app.vercel.app`)
 
 ## Step 2: Prepare Frontend for Vercel
 1.  **Create Vercel Account**: Sign up at [vercel.com](https://vercel.com/).

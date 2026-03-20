@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import models, schemas, auth_utils, database
@@ -11,10 +11,13 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="JWT Authentication System")
 
 # CORS setup
-# Combine default local origins with environment-defined origins
-default_origins = ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"]
+default_origins = [
+    "http://localhost:5173", 
+    "http://localhost:3000", 
+    "http://127.0.0.1:5173",
+    "https://jwt-authentication-system-tau.vercel.app"
+]
 env_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
-# Filter out empty strings and combine
 allowed_origins = [o for o in (default_origins + env_origins) if o]
 
 app.add_middleware(
@@ -25,7 +28,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/register", response_model=schemas.UserOut)
+router = APIRouter(prefix="/api")
+
+@router.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
@@ -46,7 +51,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-@app.post("/login", response_model=schemas.Token)
+@router.post("/login", response_model=schemas.Token)
 def login(user_credentials: schemas.UserLogin, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
     if not user:
@@ -64,7 +69,7 @@ def login(user_credentials: schemas.UserLogin, db: Session = Depends(get_db)):
 
 from fastapi.security import OAuth2PasswordBearer
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     email = auth_utils.verify_token(token)
@@ -79,7 +84,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@app.get("/profile", response_model=schemas.UserOut)
+@router.get("/profile", response_model=schemas.UserOut)
 def get_profile(current_user: models.User = Depends(get_current_user)):
     return current_user
 
@@ -100,14 +105,15 @@ conf = ConnectionConfig(
     VALIDATE_CERTS = True
 )
 
-@app.post("/forgot-password")
+@router.post("/forgot-password")
 async def forgot_password(request: schemas.ForgotPassword, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == request.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
     token = auth_utils.create_reset_token(user.email)
-    reset_link = f"http://localhost:5173/reset-password?token={token}"
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    reset_link = f"{frontend_url}/reset-password?token={token}"
     
     message = MessageSchema(
         subject="Password Reset Request",
@@ -126,7 +132,7 @@ async def forgot_password(request: schemas.ForgotPassword, db: Session = Depends
         print(f"DEBUG: Reset link for {user.email}: {reset_link}")
         return {"message": "Link generated in terminal (Email setup missing)"}
 
-@app.post("/google-login")
+@router.post("/google-login")
 def google_login(payload: dict, db: Session = Depends(get_db)):
     email = payload.get("email")
     name = payload.get("name")
@@ -149,7 +155,7 @@ def google_login(payload: dict, db: Session = Depends(get_db)):
     access_token = auth_utils.create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.post("/reset-password")
+@router.post("/reset-password")
 def reset_password(request: schemas.ResetPassword, db: Session = Depends(get_db)):
     if request.new_password != request.confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match")
@@ -167,6 +173,9 @@ def reset_password(request: schemas.ResetPassword, db: Session = Depends(get_db)
     
     return {"message": "Password reset successfully. You can now login."}
 
+app.include_router(router)
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
