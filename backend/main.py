@@ -11,10 +11,15 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="JWT Authentication System")
 
 # CORS setup
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+# Combine default local origins with environment-defined origins
+default_origins = ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"]
+env_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+# Filter out empty strings and combine
+allowed_origins = [o for o in (default_origins + env_origins) if o]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=allowed_origins if "*" not in env_origins else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
