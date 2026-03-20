@@ -34,6 +34,8 @@ router = APIRouter(prefix="/api")
 def read_root():
     return {"message": "Server is running"}
 
+app.include_router(router)
+
 @router.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
