@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+backend/venv/
+backend/__pycache__/
+*.pyc
+
+# Environment Files (IMPORTANT: SECRETS)
+.env
+backend/.env
+frontend/.env
+
+# Local Databases
+backend/users.db
+backend/users.db-journal
+
+# IDEs
+.vscode/
+.idea/
+
+# Build outputs
+frontend/dist/

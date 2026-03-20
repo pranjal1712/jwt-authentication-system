@@ -1,0 +1,12 @@
+from sqlalchemy import Column, Integer, String
+from database import Base
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    email = Column(String, unique=True, index=True)
+    phone = Column(String)
+    hashed_password = Column(String)
+    google_id = Column(String, nullable=True) # For Google login
